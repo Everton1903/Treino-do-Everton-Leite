@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treino do Everton</title>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --bg: #0a0a0a;
+            --card: #161616;
+            --text: #ffffff;
+            --rest: #ffcc00;
+            --pause: #ff4b2b;
+        }
+
+        body {
+            font-family: 'Arial Black', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container { width: 100%; max-width: 450px; }
+
+        .header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #222;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+        }
+
+        .app-title { font-size: 1.1rem; color: var(--primary); text-transform: uppercase; }
+
+        #totalTimer {
+            font-size: 1.2rem;
+            color: #fff;
+            background: #333;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+
+        .exercise-card {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            border: 2px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* ESTILO DA IMAGEM */
+        .exercise-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            display: block;
+        }
+
+        .timer-label { font-size: 1.1rem; margin-bottom: 5px; color: #888; text-transform: uppercase; }
+        .timer-display { font-size: 6.5rem; font-weight: bold; margin: 5px 0; color: var(--primary); }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .description {
+            background: #222;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-bottom: 20px;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .controls { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+        button {
+            padding: 20px;
+            border-radius: 15px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        #startBtn { background: var(--primary); color: #000; }
+        #pauseBtn { background: var(--pause); color: #fff; display: none; }
+        
+        .rest-mode { border-color: var(--rest); }
+        .rest-mode .timer-display { color: var(--rest); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-box">
+            <div class="app-title">🔥 TREINO DO Everton</div>
+            <div id="totalTimer">00:00</div>
+        </div>
+        
+        <div class="exercise-card" id="card">
+            <select id="exerciseSelect">
+                <option data-info="Salte, caia em posição de flexão, toque o peito no chão e suba saltando.">1. Burpees</option>
+                <option data-info="Posição de prancha, traga os joelhos ao peito alternando bem rápido.">2. Escalador</option>
+                <option data-info="Agachamento explosivo: salte o mais alto que puder na subida.">3. Agachamento com Salto</option>
+                <option data-info="Pule abrindo as pernas e elevando os braços acima da cabeça simultaneamente.">4. Polichinelos</option>
+                <option data-info="Corpo reto, desça o peito até o chão e empurre com força.">5. Flexões</option>
+                <option data-info="Na prancha, alterne entre apoiar as mãos e os cotovelos.">6. Prancha Dinâmica</option>
+            </select>
+
+            <img id="exerciseImg" src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500&q=80" alt="Exercício" class="exercise-image">
+
+            <div id="exerciseInfo" class="description">Aguardando início...</div>
+
+            <div id="label" class="timer-label">PRONTO?</div>
+            <div class="timer-display" id="timer">40</div>
+            
+            <div class="controls">
+                <button id="startBtn" onclick="startWorkout()">Iniciar Treino</button>
+                <button id="pauseBtn" onclick="togglePause()">Pausar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let countdown;
+        let globalTimer;
+        let totalSeconds = 0;
+        let timeLeft = 40;
+        let isPaused = false;
+        let isResting = false;
+        let trainingActive = false;
+
+        // Mapeamento de imagens atualizado para os exercícios do Everton
+        const exerciseImages = {
+            "1. Burpees": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6bmZ6NXE2Z3R4bmR4eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/23hPPfUG2cO5S9YFpE/giphy.gif",
+            "2. Escalador": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Y4eG54eG54eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/m9XYY2W5MhT4Nf1K4G/giphy.gif",
+            "3. Agachamento com Salto": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHR6bmZ6NXE2Z3R4bmR4eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/3o7TKMGZ89AQU8m9mU/giphy.gif",
+            "4. Polichinelos": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Y4eG54eG54eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/l3vR16pONZYq9MCpG/giphy.gif",
+            "5. Flexões": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHR6bmZ6NXE2Z3R4bmR4eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/3o7TKVUn7iM8FMEU24/giphy.gif",
+            "6. Prancha Dinâmica": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Y4eG54eG54eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/3o6Zt3pUvVLFgS8iX6/giphy.gif"
+        };
+
+        const timerDisplay = document.getElementById('timer');
+        const totalTimerDisplay = document.getElementById('totalTimer');
+        const label = document.getElementById('label');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const card = document.getElementById('card');
+        const exerciseSelect = document.getElementById('exerciseSelect');
+        const exerciseInfo = document.getElementById('exerciseInfo');
+        const exerciseImg = document.getElementById('exerciseImg');
+
+        function falar(texto, callback) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = texto;
+            msg.lang = 'pt-BR';
+            msg.rate = 1.1;
+            
+            if (callback) {
+                msg.onend = () => { if (!isPaused) callback(); };
+            }
+            
+            window.speechSynthesis.speak(msg);
+        }
+
+        function startGlobalTimer() {
+            if (trainingActive) return;
+            trainingActive = true;
+            globalTimer = setInterval(() => {
+                if (!isPaused) {
+                    totalSeconds++;
+                    let mins = Math.floor(totalSeconds / 60);
+                    let secs = totalSeconds % 60;
+                    totalTimerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                    if (totalSeconds === 2700) { 
+                        falar("Treinamento concluído! Parabéns pelos quarenta e cinco minutos.");
+                        clearInterval(globalTimer);
+                        clearInterval(countdown);
+                    }
+                }
+            }, 1000);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseBtn.innerText = isPaused ? "Retomar" : "Pausar";
+            pauseBtn.style.background = isPaused ? "var(--primary)" : "var(--pause)";
+            pauseBtn.style.color = isPaused ? "#000" : "#fff";
+            if (!isPaused) {
+                falar("Retomando.");
+            } else {
+                falar("Pausado.");
+            }
+        }
+
+        function startWorkout() {
+            startGlobalTimer();
+            startBtn.style.display = "none";
+            pauseBtn.style.display = "block";
+            executarCiclo();
+        }
+
+        function executarCiclo() {
+            isResting = false;
+            const option = exerciseSelect.options[exerciseSelect.selectedIndex];
+            const sinopse = option.getAttribute('data-info');
+            
+            // Atualiza Texto e Imagem específica do exercício
+            exerciseInfo.innerText = sinopse;
+            exerciseImg.src = exerciseImages[option.text] || "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500&q=80";
+            
+            label.innerText = "PREPARAR...";
+            timerDisplay.innerText = "40";
+
+            falar("Exercício: " + option.text + ". " + sinopse + ". Começando agora!", () => {
+                timeLeft = 40;
+                iniciarContagem(() => {
+                    iniciarDescanso();
+                });
+            });
+        }
+
+        function iniciarDescanso() {
+            isResting = true;
+            // Imagem de descanso (pessoa bebendo água/relaxando)
+            exerciseImg.src = "https://images.unsplash.com/photo-1594882645126-14020914d58d?w=500&q=80";
+            
+            falar("Série concluída. Descanse vinte segundos.", () => {
+                timeLeft = 20;
+                iniciarContagem(() => {
+                    proximoExercicio();
+                    executarCiclo();
+                });
+            });
+        }
+
+        function proximoExercicio() {
+            let nextIndex = exerciseSelect.selectedIndex + 1;
+            if (nextIndex >= exerciseSelect.options.length) nextIndex = 0;
+            exerciseSelect.selectedIndex = nextIndex;
+        }
+
+        function iniciarContagem(callback) {
+            if (countdown) clearInterval(countdown);
+            
+            label.innerText = isResting ? "DESCANSO" : "TREINANDO";
+            if(isResting) card.classList.add('rest-mode');
+            else card.classList.remove('rest-mode');
+
+            countdown = setInterval(() => {
+                if (!isPaused) {
+                    timeLeft--;
+                    timerDisplay.innerText = timeLeft;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(countdown);
+                        callback();
+                    }
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
