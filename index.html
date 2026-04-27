@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Treino do Everton</title>
+    <title>Treino do Everton - 45 Min</title>
     <style>
         :root {
             --primary: #00ff88;
@@ -57,11 +57,11 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* ESTILO DA IMAGEM */
         .exercise-image {
             width: 100%;
-            height: 200px;
+            height: 250px;
             object-fit: cover;
+            background: #000;
             border-radius: 15px;
             margin-bottom: 15px;
             border: 1px solid #333;
@@ -80,7 +80,7 @@
             border-radius: 12px;
             margin-bottom: 15px;
             font-size: 1.1rem;
-            pointer-events: none;
+            cursor: pointer;
         }
 
         .description {
@@ -110,8 +110,8 @@
             transition: 0.2s;
         }
 
-        #startBtn { background: var(--primary); color: #000; }
-        #pauseBtn { background: var(--pause); color: #fff; display: none; }
+        #startBtn { background: var(--primary); color: #000; width: 100%; grid-column: span 2; }
+        #pauseBtn { background: var(--pause); color: #fff; display: none; width: 100%; grid-column: span 2; }
         
         .rest-mode { border-color: var(--rest); }
         .rest-mode .timer-display { color: var(--rest); }
@@ -121,12 +121,12 @@
 
     <div class="container">
         <div class="header-box">
-            <div class="app-title">🔥 TREINO DO Everton</div>
+            <div class="app-title">🔥 TREINO DO EVERTON</div>
             <div id="totalTimer">00:00</div>
         </div>
         
         <div class="exercise-card" id="card">
-            <select id="exerciseSelect">
+            <select id="exerciseSelect" onchange="atualizarDescricao()">
                 <option data-info="Salte, caia em posição de flexão, toque o peito no chão e suba saltando.">1. Burpees</option>
                 <option data-info="Posição de prancha, traga os joelhos ao peito alternando bem rápido.">2. Escalador</option>
                 <option data-info="Agachamento explosivo: salte o mais alto que puder na subida.">3. Agachamento com Salto</option>
@@ -135,7 +135,7 @@
                 <option data-info="Na prancha, alterne entre apoiar as mãos e os cotovelos.">6. Prancha Dinâmica</option>
             </select>
 
-            <img id="exerciseImg" src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500&q=80" alt="Exercício" class="exercise-image">
+            <img id="exerciseImg" src="https://images.unsplash.com/photo-1544033527-b192daee1f5b?q=80&w=1000&auto=format&fit=crop" alt="Calistenia" class="exercise-image">
 
             <div id="exerciseInfo" class="description">Aguardando início...</div>
 
@@ -157,38 +157,38 @@
         let isPaused = false;
         let isResting = false;
         let trainingActive = false;
-
-        // Mapeamento de imagens atualizado para os exercícios do Everton
-        const exerciseImages = {
-            "1. Burpees": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6bmZ6NXE2Z3R4bmR4eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/23hPPfUG2cO5S9YFpE/giphy.gif",
-            "2. Escalador": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Y4eG54eG54eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/m9XYY2W5MhT4Nf1K4G/giphy.gif",
-            "3. Agachamento com Salto": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHR6bmZ6NXE2Z3R4bmR4eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/3o7TKMGZ89AQU8m9mU/giphy.gif",
-            "4. Polichinelos": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Y4eG54eG54eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/l3vR16pONZYq9MCpG/giphy.gif",
-            "5. Flexões": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHR6bmZ6NXE2Z3R4bmR4eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/3o7TKVUn7iM8FMEU24/giphy.gif",
-            "6. Prancha Dinâmica": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Y4eG54eG54eG54eG54eG54eG54eG54eG54eG54JnB0PWEmZXA9djFfaW50ZXJuYWxfZ2lmX2J5X2lkJmN0PWc/3o6Zt3pUvVLFgS8iX6/giphy.gif"
-        };
+        let wakeLock = null;
 
         const timerDisplay = document.getElementById('timer');
         const totalTimerDisplay = document.getElementById('totalTimer');
         const label = document.getElementById('label');
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
-        const card = document.getElementById('card');
         const exerciseSelect = document.getElementById('exerciseSelect');
         const exerciseInfo = document.getElementById('exerciseInfo');
-        const exerciseImg = document.getElementById('exerciseImg');
+        const card = document.getElementById('card');
+
+        async function manterTelaAtiva() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log("Wake Lock não suportado.");
+            }
+        }
+
+        function atualizarDescricao() {
+            const option = exerciseSelect.options[exerciseSelect.selectedIndex];
+            exerciseInfo.innerText = option.getAttribute('data-info');
+        }
 
         function falar(texto, callback) {
             window.speechSynthesis.cancel();
-            const msg = new SpeechSynthesisUtterance();
-            msg.text = texto;
+            const msg = new SpeechSynthesisUtterance(texto);
             msg.lang = 'pt-BR';
             msg.rate = 1.1;
-            
-            if (callback) {
-                msg.onend = () => { if (!isPaused) callback(); };
-            }
-            
+            msg.onend = () => { if (!isPaused && callback) callback(); };
             window.speechSynthesis.speak(msg);
         }
 
@@ -201,12 +201,6 @@
                     let mins = Math.floor(totalSeconds / 60);
                     let secs = totalSeconds % 60;
                     totalTimerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-                    if (totalSeconds === 2700) { 
-                        falar("Treinamento concluído! Parabéns pelos quarenta e cinco minutos.");
-                        clearInterval(globalTimer);
-                        clearInterval(countdown);
-                    }
                 }
             }, 1000);
         }
@@ -216,14 +210,11 @@
             pauseBtn.innerText = isPaused ? "Retomar" : "Pausar";
             pauseBtn.style.background = isPaused ? "var(--primary)" : "var(--pause)";
             pauseBtn.style.color = isPaused ? "#000" : "#fff";
-            if (!isPaused) {
-                falar("Retomando.");
-            } else {
-                falar("Pausado.");
-            }
+            if (!isPaused) falar("Retomando."); else window.speechSynthesis.cancel();
         }
 
         function startWorkout() {
+            manterTelaAtiva();
             startGlobalTimer();
             startBtn.style.display = "none";
             pauseBtn.style.display = "block";
@@ -235,26 +226,17 @@
             const option = exerciseSelect.options[exerciseSelect.selectedIndex];
             const sinopse = option.getAttribute('data-info');
             
-            // Atualiza Texto e Imagem específica do exercício
-            exerciseInfo.innerText = sinopse;
-            exerciseImg.src = exerciseImages[option.text] || "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500&q=80";
-            
+            atualizarDescricao();
             label.innerText = "PREPARAR...";
-            timerDisplay.innerText = "40";
-
-            falar("Exercício: " + option.text + ". " + sinopse + ". Começando agora!", () => {
+            
+            falar("Exercício " + option.text + ". " + sinopse + ". Começando agora!", () => {
                 timeLeft = 40;
-                iniciarContagem(() => {
-                    iniciarDescanso();
-                });
+                iniciarContagem(() => iniciarDescanso());
             });
         }
 
         function iniciarDescanso() {
             isResting = true;
-            // Imagem de descanso (pessoa bebendo água/relaxando)
-            exerciseImg.src = "https://images.unsplash.com/photo-1594882645126-14020914d58d?w=500&q=80";
-            
             falar("Série concluída. Descanse vinte segundos.", () => {
                 timeLeft = 20;
                 iniciarContagem(() => {
@@ -272,16 +254,13 @@
 
         function iniciarContagem(callback) {
             if (countdown) clearInterval(countdown);
-            
             label.innerText = isResting ? "DESCANSO" : "TREINANDO";
-            if(isResting) card.classList.add('rest-mode');
-            else card.classList.remove('rest-mode');
+            if(isResting) card.classList.add('rest-mode'); else card.classList.remove('rest-mode');
 
             countdown = setInterval(() => {
                 if (!isPaused) {
                     timeLeft--;
                     timerDisplay.innerText = timeLeft;
-
                     if (timeLeft <= 0) {
                         clearInterval(countdown);
                         callback();
