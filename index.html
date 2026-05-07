@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Treino do Everton - 45 Min</title>
+    <title>Treino do Everton - 30 Min</title>
     <style>
         :root {
             --primary: #00ff88;
@@ -141,7 +141,7 @@
             <div id="exerciseInfo" class="description">Aguardando início...</div>
 
             <div id="label" class="timer-label">PRONTO?</div>
-            <div class="timer-display" id="timer">40</div>
+            <div class="timer-display" id="timer">20</div>
             
             <div class="controls">
                 <button id="startBtn" onclick="startWorkout()">Iniciar Treino</button>
@@ -154,11 +154,12 @@
         let countdown;
         let globalTimer;
         let totalSeconds = 0;
-        let timeLeft = 40;
+        let timeLeft = 20; 
         let isPaused = false;
         let isResting = false;
         let trainingActive = false;
         let wakeLock = null;
+        let etapaConcluida = false;
 
         const timerDisplay = document.getElementById('timer');
         const totalTimerDisplay = document.getElementById('totalTimer');
@@ -202,6 +203,19 @@
                     let mins = Math.floor(totalSeconds / 60);
                     let secs = totalSeconds % 60;
                     totalTimerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                    if (totalSeconds === 900 && !etapaConcluida) {
+                        etapaConcluida = true;
+                        togglePause();
+                        falar("Primeira etapa de quinze minutos concluída. Respire, beba uma água e clique em retomar para a parte final.");
+                    }
+
+                    if (totalSeconds >= 1800) {
+                        clearInterval(globalTimer);
+                        clearInterval(countdown);
+                        falar("Treino finalizado! Você completou os trinta minutos. Bom trabalho!");
+                        trainingActive = false;
+                    }
                 }
             }, 1000);
         }
@@ -211,7 +225,11 @@
             pauseBtn.innerText = isPaused ? "Retomar" : "Pausar";
             pauseBtn.style.background = isPaused ? "var(--primary)" : "var(--pause)";
             pauseBtn.style.color = isPaused ? "#000" : "#fff";
-            if (!isPaused) falar("Retomando."); else window.speechSynthesis.cancel();
+            if (!isPaused) {
+                falar("Retomando.");
+            } else {
+                window.speechSynthesis.cancel();
+            }
         }
 
         function startWorkout() {
@@ -223,6 +241,7 @@
         }
 
         function executarCiclo() {
+            if (totalSeconds >= 1800) return;
             isResting = false;
             const option = exerciseSelect.options[exerciseSelect.selectedIndex];
             const sinopse = option.getAttribute('data-info');
@@ -230,16 +249,18 @@
             atualizarDescricao();
             label.innerText = "PREPARAR...";
             
-            falar("Exercício " + option.text + ". " + sinopse + ". Começando agora!", () => {
-                timeLeft = 40;
+            // Fala o nome do exercício e a explicação (sinopse) antes de começar os 20s
+            falar("Exercício: " + option.text + ". " + sinopse + ". Começando agora!", () => {
+                timeLeft = 20;
                 iniciarContagem(() => iniciarDescanso());
             });
         }
 
         function iniciarDescanso() {
+            if (totalSeconds >= 1800) return;
             isResting = true;
-            falar("Série concluída. Descanse vinte segundos.", () => {
-                timeLeft = 20;
+            falar("Tempo esgotado. Descanse quarenta segundos.", () => {
+                timeLeft = 40;
                 iniciarContagem(() => {
                     proximoExercicio();
                     executarCiclo();
